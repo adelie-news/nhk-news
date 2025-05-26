@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NHKニュース表示</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      font-family: Arial, sans-serif;
+      background-color: #f2f2f2;
+    }
+    .container {
+      width: calc(100% - 300px);
+      height: calc(100% - 200px);
+      margin: 100px 150px;
+      background-color: #fff;
+      padding: 20px;
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+    .news-item {
+      border: 1px solid #ddd;
+      padding: 15px;
+      margin-bottom: 15px;
+      border-radius: 4px;
+      background-color: #fafafa;
+    }
+    .news-item h2 {
+      margin: 0 0 10px;
+      font-size: 50pt;
+    }
+    .news-item p {
+      margin: 0;
+      line-height: 1.6;
+      font-size: 30pt;
+    }
+  </style>
+</head>
+<body>
+  <div class="container" id="newsContainer">
+    <h1>最新ニュース</h1>
+  </div>
+  
+  <script>
+    const rssUrl = 'https://www3.nhk.or.jp/rss/news/cat0.xml';
+    const proxyUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`;
+
+    fetch(proxyUrl)
+      .then(res => res.json())
+      .then(data => {
+        const items = data.items;
+        const container = document.getElementById("newsContainer");
+
+        if (items.length > 1) {
+          const item = items[1];
+          const title = item.title;
+          const description = item.description;
+
+          const newsItemDiv = document.createElement("div");
+          newsItemDiv.classList.add("news-item");
+
+          const titleEl = document.createElement("h2");
+          titleEl.textContent = title;
+
+          const descEl = document.createElement("p");
+          descEl.innerHTML = description;
+
+          newsItemDiv.appendChild(titleEl);
+          newsItemDiv.appendChild(descEl);
+          container.appendChild(newsItemDiv);
+        } else {
+          container.innerHTML += "<p>2つめのニュースが見つかりませんでした。</p>";
+        }
+      })
+      .catch(err => {
+        console.error("RSS取得エラー:", err);
+      });
+  </script>
+</body>
+</html>
