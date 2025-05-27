@@ -2,83 +2,191 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NHKニュース表示</title>
+  <title>安全運転サイネージ</title>
+  <meta http-equiv="Content-Script-Type" content="text/javascript">
   <style>
-    html, body {
+    body {
       margin: 0;
       padding: 0;
-      width: 100%;
-      height: 100%;
-      font-family: Arial, sans-serif;
-      background-color: #f2f2f2;
+      width: 1920px;
+      height: 1080px;
+      background-color: #ffffff;
+      font-family: "メイリオ", sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: start;
     }
-    .container {
-      width: calc(100% - 300px);
-      height: calc(100% - 200px);
-      margin: 100px 150px;
-      background-color: #fff;
-      padding: 20px;
-      box-sizing: border-box;
-      overflow: hidden;
+
+    .main-days {
+      margin-top: 60px;
+      color: #3399cc;
+      font-style: italic;
     }
-    .news-item {
-      border: 1px solid #ddd;
-      padding: 15px;
-      margin-bottom: 15px;
-      border-radius: 4px;
-      background-color: #fafafa;
+
+    .label {
+      font-size: 150px;
+      font-weight: bold;
     }
-    .news-item h2 {
-      margin: 0 0 10px;
-      font-size: 50pt;
+
+    .days-num {
+      font-size: 200px;
+      font-weight: bold;
     }
-    .news-item p {
-      margin: 0;
-      line-height: 1.6;
-      font-size: 30pt;
+
+    .region-days {
+      font-size: 36px;
+      color: #555;
+      margin-top: -20px;
+      letter-spacing: 8px;
+    }
+
+    .today-date {
+      font-size: 48px;
+      font-weight: bold;
+      color: #008b8b;
+      margin-top: 60px;
+    }
+
+    .slogan1 {
+      font-size: 48px;
+      color: #008b8b;
+      text-align: center;
+      margin: 20px 120px -20px 60px;
+    }
+
+    .slogan2 {
+      font-size: 30px;
+      color: #2f4f4f;
+      text-align: center;
+      margin: 0 120px;
+    }
+
+    .wednesday {
+      text-align: center;
+      margin-top: 40px;
+    }
+
+    .wed-head {
+      font-size: 36px;
+      color: #e95388;
+    }
+
+    .wed-main {
+      font-size: 48px;
+      font-weight: bold;
+      background: #ffff00;
+      color: #ff007f;
+      text-shadow: 2px 2px 1px #e6afcf;
+    }
+
+    .wed-note {
+      font-size: 28px;
+      color: #8a2be2;
+    }
+
+    /* 水曜日モード用の調整 */
+    body.wednesday-mode .slogan1 {
+      font-size: 36px;
+      margin: 30px 80px -30px 80px;
+    }
+
+    body.wednesday-mode .slogan2 {
+      font-size: 24px;
+      margin: 0 80px;
+      line-height: 1.3;
+    }
+
+    body.wednesday-mode .wed-note {
+      font-size: 24px;
     }
   </style>
-</head>
-<body>
-  <div class="container" id="newsContainer">
-    <h1>最新ニュース</h1>
-  </div>
-  
   <script>
-    const rssUrl = 'https://www3.nhk.or.jp/rss/news/cat0.xml';
-    const proxyUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`;
+    const xday0 = new Date(2025, 5-1, 12); // 無事故
+    const xday1 = new Date(2025, 3-1, 15); // 鹿児島
+    const xday2 = new Date(2024, 10-1, 8);  // 宮崎
+    const xday3 = new Date(2025, 5-1, 12); // 熊本
+    const xday4 = new Date(2025, 5-1, 8);  // 大分
 
-    fetch(proxyUrl)
-      .then(res => res.json())
-      .then(data => {
-        const items = data.items;
-        const container = document.getElementById("newsContainer");
+    const slogan = {
+ "slogan1" : "　動物注意　看板見たら　飛出し警戒,<br/>皆さんは、ロードキルという言葉を聞いたことがありますか。これは、道路上で発生する野生動物との事故を指します。「動物注意」の標識を見かけた際には、動物の飛出しを警戒するとともに、夜間はハイビームを活用してください。",
+ "slogan2" : "　休日中は　不慣れな車が　増加します,<br/>連休をはじめとする休日には、普段は車を運転しないような人も車を使って出かけます。運転に不慣れなドライバーは、周囲の安全確認を行う余裕がなく、危険な行動をとることがありますので、挙動不審な車からは距離をとって、防衛運転に徹しましょう。",
+ "slogan3" : "　自転車を　追い抜く際も　安全確保,<br/>運転中に自転車を追い抜く際、速度や側方間隔を意識していますか？　道路交通法の改正されていますので、自転車を追い抜く際には、側方間隔に応じた安全な速度で進行することを、日頃から実践していきましょう。",
+ "slogan4" : "　風邪薬　飲む前確認　副作用,<br/>風邪薬の副作用が原因と考えられる交通事故がたびたび発生します。薬を服用する際には副作用を確認し、運転に影響を及ぼさないものを選びましょう。「自分は大丈夫」などといった甘い考えは絶対にやめてください。",
+ "slogan5" : "　高速道路　本線停止は　命の危険,<br/>高速道路の本線上で停止中に、後続車に追突される事故があとを絶ちません。やむを得ず本線上に停止してしまった場合には、命の危険があることを理解して直ちに車外へ脱出し、ガードレール等の外へ避難してください。",
+ "slogan6" : "　トンネル内　ヘッドライトは　必ず点灯,<br/>トンネル内での追突事故が頻発しています。最近では、自動でヘッドライトが点灯する車も増えましたが、まだまだヘッドライトを点灯せずに走行する車もたくさん見かけます。ヘッドライトの点灯は視界の確保だけでなく、後続車への合図にもなりますので、必ず点灯してください。",
+ "slogan7" : "　休み明け　気持ち引き締め　安全運転,<br/>大型連休が終わり、「久しぶりに仕事」という人も少なくないはずです。休日モードで漫然と運転してしまうと、事故につながるおそれがあります。「休み明けは事故が多い」ということを意識して、気持ちを引き締めて安全運転に取り組みましょう。",
+ "slogan8" : "　駐車場　死角の歩行者　要注意,<br/>駐車場では、車両や支柱等の死角からの歩行者の飛出しを警戒しながら運転しましょう。とくに立体駐車場や地下駐車場では視界も悪くなるため注意が必要です。スピードを出さずに走行してください。",
+ "slogan9" : "　右折時は　止まる気持ちで　徐行しよう,<br/>右折時に、急いだ結果、交差点の先の横断歩道上で歩行者等と衝突する事故が頻発しています。交差点を右折する際には、いつでも止まることができるよう、徐行してください。ゆっくりと走行することで歩行者等の見落としを防ぎましょう。",
+ "slogan10" : "　踏切通過は　自車のスペース　確保してから,<br/>踏切内に取り残され、列車と衝突する事故がたびたび発生しています。「踏切内で待っている間に前に進むだろう」といった甘い考えは非常に危険です。踏切の先に自車のスペースが確保できるまでは、絶対に進入してはいけません。",
+ "slogan11" : "　横断歩道接近　周囲の確認　怠らない,<br/>信号機のない横断歩道に近づく際には、周囲に歩行者等がいないかどうかの確認を怠らないようにしましょう。そして、歩行者等がいる場合には、いつでも止まれるように事前の準備を行うことが重要です。",
+ "slogan12" : "　道路脇　子供を見たら　飛出し注意,<br/>毎年、5月は小学１年生の交通事故が多発するというデータがあります。その理由として、一人歩きが始まる、学校生活に慣れて気分がおおらかになる、といったことが挙げられます。子供を見かけた際には、飛出し等に注意しながら見守りましょう。",
+ "slogan13" : "　熱中症　警戒アラート　確認しよう,<br/>昨年は、５月半ばから30℃以上となる真夏日が現れはじめ、月末には35℃以上の猛暑日も観測されました。熱中症による健康被害が生じるおそれがある場合には「熱中症警戒アラート」等が発令されますので、そうした日には他人事とは考えず、予防行動を積極的にとりましょう。",
+ "slogan14" : "　高速道路　車線規制の　見落とし注意,<br/>高速道路上で、工事規制箇所へ衝突する事故が多発しています。その原因として考えられるのが、漫然運転です。単調な道路ではボーっとしてしまうことがあるかもしれませんが、高速道路上では緊張感を持ち、車線規制等の標識を見落とさないようにしてください。",
+ "slogan15" : "　自転車も　点検・整備が　必要です,<br/>みなさんは、自転車の点検・整備をしていますか？　車同様、自転車に乗る際にも、チェーンやハンドル、ブレーキなどの点検を行わなければ、事故につながるおそれがあります。実際に、ゆるんだチェーンが外れて転倒するなどの事故も発生していますので、定期的に点検を行いましょう。",
+ "slogan16" : "　左折時は　早めの合図で　巻込み防止,<br/>皆さんは、交差点を左折する際、その直前に合図を出していませんか？　左折時の合図を出すタイミングは、30ｍ手前からです。早めに合図を出すことで、左後方を走行してくる二輪車等に左折する意思を伝えましょう。",
+ "slogan17" : "　踏み間違い　誰でも起こす　危険あり,<br/>アクセルとブレーキのペダルの踏み間違いによる事故が後を絶ちません。ペダルの踏み間違いと聞くと、高齢者を思い浮かべてしまいますが、統計では、若年層でも多発しています。誰もが踏み間違う可能性はあることを意識して、車を動かす前にペダルを確認するクセをつけましょう。",
+ "slogan18" : "　駐車場　車止めの有無　確認しよう,<br/>先日、車止めがあると思って進行を続けたところ、そのまま店舗に突っ込んでしまうという事故が発生しました。車止めに当たる感覚を頼りに駐車する人も少なくないと思いますが、駐車場によって車止めの有無は異なります。駐車時は目視やバックミラー等で自車の位置をしっかりと確認しましょう。",
+ "slogan19" : "　遠回り　嫌がる歩行者　警戒しよう,<br/>高齢者は横断歩道までの道のりを嫌い、近道を目的として横断歩道がない場所を横断しようとする傾向があることが指摘されています。また、自宅付近でそういった行動をとることもわかっていますので、生活道路等では、横断歩道以外の場所でも歩行者の横断を警戒してください。",
+ "slogan20" : "　高速走行　わき見・漫然　事故の元,<br/>高速道路での追突事故が頻発しています。単調な道路ではわき見をしたり、漫然と運転しやすい状況ではありますが、万が一、停止車両等があった場合に回避することが困難になります。高速道路上では気を緩めず、集中力を維持して運転してください。",
+ "slogan21" : "　見逃さない　ながらスマホの　自転車を,<br/>スマートフォンを操作しながら走行する自転車は少なくありません。ドライバーとしては、こういった自転車を出来るだけ早く発見するとともに、どのような動きをしても衝突することがないように警戒してください。",
+ "slogan22" : "　ACC　しっかり理解し　快適運転,<br/>ACC（アダプティブ・クルーズ・コントロール）は、アクセルとブレーキの操作を自動的に行い、運転を支援する機能です。追突抑制や疲労軽減などの効果が見込まれ、近年、搭載する車も増えました。過信せず、しっかりと機能を理解した上で、使用してください。",
+ "slogan23" : "　守りましょう　横断歩道は　歩行者優先,<br/>一時停止規制があり、横断歩道を横断しようとしている歩行者がいるにもかかわらず、我が物顔で横断歩道を通過している運転者をまだまだ見かけます。今一度交通ルールを見直し、横断歩道は歩行者優先であることをしっかりと守りましょう。",
+ "slogan24" : "　信号の　変わり目　歩行者　要注意,<br/>交差点を右折する際、歩行者用信号が赤に変わったからと油断すると、急いで横断歩道に駆け込んでくる歩行者や自転車と接触するおそれがあります。右折時は、対向車やその先の歩行者等に注意するほか、信号の変わり目では歩行者等の信号無視も警戒しましょう。",
+ "slogan25" : "　トンネル内　わき見漫然　厳禁です,<br/>トンネル内での正面衝突が頻発しています。トンネル内で反対車線にはみ出してしまうと、対向車は逃げ場がなく、重大事故につながるおそれがあります。トンネル内ではわき見や漫然運転に注意して、慎重に運転してください。",
+ "slogan26" : "　渋滞時　二輪のすり抜け　要注意,<br/>渋滞中に、二輪車が車列の間を縫うように走行してくることがあります。そのため、安易に車線変更等を行うと、衝突するおそれがあります。渋滞中はイライラや疲労などから注意が散漫になりがちですが、車線を変更する際にはしっかりと合図を出し、安全確認を徹底してください。",
+ "slogan27" : "駐車場　前向き駐車で　安全発進,<br/>皆さんは、駐車する際に車の向きを意識していますか。一般的に、後ろ向き駐車のほうが、前向き駐車よりも駐車場から発進する際に危険であると言われています。駐車方法が指定されていない場合は、前向き駐車を意識してみてください。",
+ "slogan28" : "危険です　抱っこで自転車　止めましょう,<br/>乳児を抱っこしながら自転車に乗る姿を見かけることがあります。子どもを前に抱いた状態で自転車に乗ると、足元が見えなくなったり、ハンドル操作がしにくくなるほか、膝が子どもにあたり、落ちてしまうおそれもあります。子どもを抱っこしながら自転車を運転するのは止めましょう。",
+ "slogan29" : "停止線　しっかり守って　周りは安心,<br/>停止線は、他車（者）の安全を阻害したり、危険を与えないために越えてはいけない場所です。交差点等で停止する際には、停止線からはみ出ないように気をつけることで、他の車や歩行者などに安全、安心に通行してもらいましょう。",
+ "slogan30" : "運転前に　シートとミラーの　調整を,<br/>運転前に、シートやミラーのポジションを調整していますか。シートの位置やミラーの角度は、ひとそれぞれ異なります。運転する際には、かならず調整してください。複数人で車を使用している場合は、とくに注意してください。",
+ "slogan31" : "自分のため　周りのために　禁煙を,<br/>５月31日は、世界保健機関（WHO）により定められた「世界禁煙デー」です。また、厚生労働省では、６月６日にかけてを「禁煙週間」としています。喫煙は、生活習慣病や肺がんなど、さまざまな健康被害の原因となります。みなさんも、禁煙に取り組み、卒煙を目指しましょう。"
+    };
 
-        if (items.length > 1) {
-          const item = items[1];
-          const title = item.title;
-          const description = item.description;
+    function getDays(startDate) {
+      const now = new Date();
+      return Math.floor((now - startDate) / (1000 * 60 * 60 * 24));
+    }
 
-          const newsItemDiv = document.createElement("div");
-          newsItemDiv.classList.add("news-item");
+    function start() {
+      const mainNum = getDays(xday0);
+      document.getElementById("mainDays").innerHTML =
+        `<span class="label">無事故 </span><span class="days-num">${mainNum}</span><span class="label"> 日継続</span>`;
 
-          const titleEl = document.createElement("h2");
-          titleEl.textContent = title;
+      document.getElementById("regionDays").innerHTML =
+        `【鹿：${getDays(xday1)}日】 【宮：${getDays(xday2)}日】 【熊：${getDays(xday3)}日】 【大：${getDays(xday4)}日】`;
 
-          const descEl = document.createElement("p");
-          descEl.innerHTML = description;
+      const now = new Date();
+      const yobi = ["日", "月", "火", "水", "木", "金", "土"][now.getDay()];
+      document.getElementById("dateToday").innerHTML =
+        `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日（${yobi}）`;
 
-          newsItemDiv.appendChild(titleEl);
-          newsItemDiv.appendChild(descEl);
-          container.appendChild(newsItemDiv);
-        } else {
-          container.innerHTML += "<p>2つめのニュースが見つかりませんでした。</p>";
-        }
-      })
-      .catch(err => {
-        console.error("RSS取得エラー:", err);
-      });
+      const day = now.getDate();
+      const sloganKey = "slogan" + ((day - 1) % 31 + 1); // 1〜31循環
+      const split = slogan[sloganKey]?.split(",") || ["安全第一", "標語データが見つかりません"];
+
+      document.getElementById("slogan1").innerHTML = split[0];
+      document.getElementById("slogan2").innerHTML = split[1];
+
+      if (now.getDay() === 3) {
+        document.body.classList.add("wednesday-mode");
+        document.getElementById("wednesday1").innerHTML = "■水曜日は";
+        document.getElementById("wednesday2").innerHTML = "定時退社推奨日";
+        document.getElementById("wednesday4").innerHTML = "月4回の早帰りを目標としております。社員全員が目標達成できるよう努めてまいりましょう。";
+      }
+    }
   </script>
+</head>
+<body onload="start()">
+  <div class="main-days" id="mainDays"></div>
+  <div class="region-days" id="regionDays"></div>
+  <div class="today-date" id="dateToday"></div>
+  <div class="slogan1" id="slogan1"></div>
+  <div class="slogan2" id="slogan2"></div>
+  <div class="wednesday">
+    <div class="wed-head" id="wednesday1"></div>
+    <div class="wed-main" id="wednesday2"></div>
+    <div class="wed-head" id="wednesday3"></div>
+    <div class="wed-note" id="wednesday4"></div>
+  </div>
 </body>
 </html>
